@@ -3,11 +3,13 @@ var app = express()
 const PORT = 3000;
 var path = require("path")
 var hbs = require('express-handlebars');
-const request = require('request');
+const request = require('request-promise');
 var officegen = require('officegen');
 var docx = officegen('docx');
 var upload = require("express-fileupload");
 var mammoth = require("mammoth");
+const uuidv4 = require("uuid/v4");
+const tempfile = require('tempfile');
 var filename, textConverted;
 var translatedWords = []
 
@@ -60,71 +62,97 @@ var getFromBetween = {
     }
 };
 
+app.post('/', function (req, res) {
+    // var tempFilePath = tempfile('.docx');
+    // docx.setDocSubject('testDoc Subject');
+    // docx.setDocKeywords('keywords');
+    // docx.setDescription('test description');
+
+    // var pObj = docx.createP({ align: 'center' });
+    // pObj.addText('Policy Data', { bold: true, underline: true });
+
+    // docx.on('finalize', function (written) {
+    //     console.log('Finish to create Word file.\nTotal bytes created: ' + written + '\n');
+    // });
+    // docx.on('error', function (err) {
+    //     console.log(err);
+    // });
+
+    // res.writeHead(200, {
+    //     "Content-Type": "application/vnd.openxmlformats-officedocument.documentml.document",
+    //     'Content-disposition': 'attachment; filename=testdoc.docx'
+    // });
+    // docx.generate(res);
+})
+
 
 app.get("/", function (req, res) {
-    var elo = ["ich", "nein", "was"]
-    elo.map(m => {
-        request({
-            uri: 'https://api.pons.com/v1/dictionary',
-            headers: {
-                'Content-type': 'application/x-www-form-urlencoded',
-                "x-secret": "cd0132b6a2b33b6880d0b79dd1946a5456d00bc1b861cb1f281fea5f01313103",
-            },
-            qs: {
-                q: m,
-                in: "de",
-                language: "de",
-                l: "depl",
-                ref: true,
-                json: true,
-            }
-        }, (err, res, body) => {
-            if (err) { return console.log(err); }
-            var co = JSON.parse(body)
+    var pObj = docx.createP({ backline: 'E0E0E0' });
+    pObj.addText('Backline text1');
+    pObj.addText(' text2');
+    // for (let i = 0; i < words.length; i++) {
+    //     arrayOfPromises.push(call(words[i]))
+    // }
 
-            co.map(c => {
-                console.log(c.hits[0].roms[0].arabs[0].translations[0])
-                //     c.hits.map(m => {
-                //         m.roms.map(w => {
-                //             w.arabs.map(s => {
-                //                 console.log(s.translations[0].target)
-                //                 //s.translations.map(k => console.log(k.target))
+    // async function call(word) {
+    //     let optAzure = {
+    //         method: "POST",
+    //         baseUrl: "https://api.cognitive.microsofttranslator.com/",
+    //         url: "translate",
+    //         qs: {
+    //             "api-version": "3.0",
+    //             from: "de",
+    //             to: ["de", "pl"]
+    //         },
+    //         headers: {
+    //             "Ocp-Apim-Subscription-Key": "20c6f843ccfe4dd59a5e26484138cf01",
+    //             "Content-type": "application/json",
+    //             "X-ClientTraceId": uuidv4().toString()
+    //         },
+    //         body: [
+    //             {
+    //                 text: word
+    //             }
+    //         ],
+    //         json: true
+    //     };
 
-                //             })
-
-                //         })
-                //     })
-
-            })
-
-
-        });
-    })
-
-
-    // request({
-    //     uri: 'https://api.pons.com/v1/dictionary',
-    //     headers: {
-    //         'Content-type': 'application/x-www-form-urlencoded',
-    //         "x-secret": "cd0132b6a2b33b6880d0b79dd1946a5456d00bc1b861cb1f281fea5f01313103",
-    //     },
-    //     qs: {
-    //         q: "ich",
-    //         in: "de",
-    //         language: "de",
-    //         l: "depl",
-    //         ref: true,
-    //         json: true,
+    //     let optPonse = {
+    //         uri: 'https://api.pons.com/v1/dictionary',
+    //         headers: {
+    //             'Content-type': 'application/x-www-form-urlencoded',
+    //             "x-secret": "cd0132b6a2b33b6880d0b79dd1946a5456d00bc1b861cb1f281fea5f01313103",
+    //         },
+    //         qs: {
+    //             q: word,
+    //             in: "de",
+    //             language: "de",
+    //             l: "depl",
+    //             ref: true,
+    //             json: true,
+    //         }
     //     }
+
+    //     let resultAzure = await request(optAzure);
+    //     let resultPonse = await request(optPonse);
+    //     //await zapytanie do azure
+    //     //await zapytanie do ponse
+    //     //return {azure,pons}
+    //     return { resultAzure, resultPonse };
+    // }
+
+    // Promise.all(arrayOfPromises).then((result) => {
+    //     console.log(result[0].resultPonse)
+
     // })
-    // console.log(res)
-    //res.send(xd)
-    //res.render("index")
+
+    res.render('index')
 })
 
 app.post("/upload", function (req, res) {
+    let arrayOfPromises = []
     if (req.files) {
-        console.log(req.files.upfile.name)
+        // console.log(req.files.upfile.name)
         filename = req.files.upfile.name
         var file = req.files.upfile
 
@@ -134,19 +162,102 @@ app.post("/upload", function (req, res) {
                 res.send("error")
             } else {
                 res.send("DONE")
+                mammoth.extractRawText({ path: "path/to/document.docx" })
+                    .then(function (result) {
+                        var text = result.value; // The raw text
+                        var messages = result.messages;
+                    })
+                    .done();
                 mammoth.convertToHtml({ path: "./upload/" + filename })
                     .then(function (result) {
                         textConverted = result.value; // The raw text
                         var messages = result.messages;
                         var results = getFromBetween.get(textConverted, "<strong>", "</strong>");
                         console.log(results)
-                        results.map(m => {
-                            translatedWords.push({ source: m, target: "" })
+                        var words = results
+                        for (let i = 0; i < words.length; i++) {
+                            arrayOfPromises.push(call(words[i]))
+                        }
+                        async function call(word) {
+                            // zapytanie do azure 
+                            let optAzure = {
+                                method: "POST",
+                                baseUrl: "https://api.cognitive.microsofttranslator.com/",
+                                url: "translate",
+                                qs: {
+                                    "api-version": "3.0",
+                                    from: "de",
+                                    to: ["de", "pl"]
+                                },
+                                headers: {
+                                    "Ocp-Apim-Subscription-Key": "20c6f843ccfe4dd59a5e26484138cf01",
+                                    "Content-type": "application/json",
+                                    "X-ClientTraceId": uuidv4().toString()
+                                },
+                                body: [
+                                    {
+                                        text: word
+                                    }
+                                ],
+                                json: true
+                            };
+                            // zapytanie do ponse
+                            let optPonse = {
+                                uri: 'https://api.pons.com/v1/dictionary',
+                                headers: {
+                                    'Content-type': 'application/x-www-form-urlencoded',
+                                    "x-secret": "cd0132b6a2b33b6880d0b79dd1946a5456d00bc1b861cb1f281fea5f01313103",
+                                },
+                                qs: {
+                                    q: word,
+                                    in: "de",
+                                    language: "de",
+                                    l: "depl",
+                                    ref: true,
+                                    json: true,
+                                }
+                            }
+
+                            let resultAzure = await request(optAzure);
+                            let resultPonse = await request(optPonse);
+                            //await zapytanie do azure
+                            //await zapytanie do ponse
+                            //return {azure,pons}
+                            return { resultAzure, resultPonse };
+                        }
+                        var translatedPonse = []
+                        Promise.all(arrayOfPromises).then((result) => {
+                            var translate = result
+                            translate.map(m => {
+                                translatedPonse.push(JSON.parse(m.resultPonse))
+                                translatedWords.push({ azureSource: m.resultAzure[0].translations[0].text, azureTarget: m.resultAzure[0].translations[1].text })
+                            })
+
+                            var determiners = [];
+
+                            translatedPonse.map(w => {
+                                console.log(w[0].hits[0].roms[0].wordclass)
+                                if (w[0].hits[0].roms[0].arabs[0].translations[0].target.includes("Maskulinum")) {
+                                    determiners.push("Der")
+                                } else if (w[0].hits[0].roms[0].arabs[0].translations[0].target.includes("Femininum")) {
+                                    determiners.push("Die")
+                                } else if (w[0].hits[0].roms[0].arabs[0].translations[0].target.includes("Neutrum")) {
+                                    determiners.push("Das")
+                                } else {
+                                    determiners.push("")
+                                }
+                            })
+                            var readyWords = []
+                            for (let i = 0; i < translatedWords.length; i++) {
+                                if (!readyWords.includes(determiners[i] + " " + translatedWords[i].azureSource)) {
+                                    readyWords.push({ source: determiners[i] + " " + translatedWords[i].azureSource, target: translatedWords[i].azureTarget })
+
+                                }
+                            }
+                            console.log(readyWords)
+                            //console.log(determiners)
+
                         })
-                        console.log(translatedWords)
-
-
-
                     })
                     .done();
             }
