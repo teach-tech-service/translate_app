@@ -9,7 +9,6 @@ var docx = officegen('docx');
 var upload = require("express-fileupload");
 var mammoth = require("mammoth");
 const uuidv4 = require("uuid/v4");
-const tempfile = require('tempfile');
 var filename, textConverted;
 var translatedWords = []
 
@@ -62,34 +61,8 @@ var getFromBetween = {
     }
 };
 
-app.post('/', function (req, res) {
-    // var tempFilePath = tempfile('.docx');
-    // docx.setDocSubject('testDoc Subject');
-    // docx.setDocKeywords('keywords');
-    // docx.setDescription('test description');
-
-    // var pObj = docx.createP({ align: 'center' });
-    // pObj.addText('Policy Data', { bold: true, underline: true });
-
-    // docx.on('finalize', function (written) {
-    //     console.log('Finish to create Word file.\nTotal bytes created: ' + written + '\n');
-    // });
-    // docx.on('error', function (err) {
-    //     console.log(err);
-    // });
-
-    // res.writeHead(200, {
-    //     "Content-Type": "application/vnd.openxmlformats-officedocument.documentml.document",
-    //     'Content-disposition': 'attachment; filename=testdoc.docx'
-    // });
-    // docx.generate(res);
-})
-
 
 app.get("/", function (req, res) {
-    var pObj = docx.createP({ backline: 'E0E0E0' });
-    pObj.addText('Backline text1');
-    pObj.addText(' text2');
     // for (let i = 0; i < words.length; i++) {
     //     arrayOfPromises.push(call(words[i]))
     // }
@@ -162,12 +135,6 @@ app.post("/upload", function (req, res) {
                 res.send("error")
             } else {
                 res.send("DONE")
-                mammoth.extractRawText({ path: "path/to/document.docx" })
-                    .then(function (result) {
-                        var text = result.value; // The raw text
-                        var messages = result.messages;
-                    })
-                    .done();
                 mammoth.convertToHtml({ path: "./upload/" + filename })
                     .then(function (result) {
                         textConverted = result.value; // The raw text
@@ -248,12 +215,14 @@ app.post("/upload", function (req, res) {
                                 }
                             })
                             var readyWords = []
+
                             for (let i = 0; i < translatedWords.length; i++) {
                                 if (!readyWords.includes(determiners[i] + " " + translatedWords[i].azureSource)) {
                                     readyWords.push({ source: determiners[i] + " " + translatedWords[i].azureSource, target: translatedWords[i].azureTarget })
 
                                 }
                             }
+
                             console.log(readyWords)
                             //console.log(determiners)
 
