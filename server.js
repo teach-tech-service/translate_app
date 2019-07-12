@@ -5,14 +5,15 @@ const PORT = 3000;
 var path = require("path")
 var hbs = require('express-handlebars');
 const request = require('request-promise');
-var officegen = require('officegen');
-var docx = officegen('docx');
 var upload = require("express-fileupload");
 var mammoth = require("mammoth");
 var mongoose = require('mongoose')
 const uuidv4 = require("uuid/v4");
+const docx = require("docx")
+var path = require("path")
+const { Document, Paragraph, Packer } = docx;
 var Word = require("./models/words")
-var filename, textConverted;
+var filename, textConverted, plainText;
 var translatedWords = []
 
 
@@ -83,10 +84,10 @@ app.post("/upload", function (req, res) {
                 console.log(err);
                 res.send("error")
             } else {
-                res.send("DONE")
+                // res.send("DONE")
                 mammoth.extractRawText({ path: "./upload/" + filename })
                     .then(function (result) {
-                        var text = result.value; // The raw text
+                        plainText = result.value; // The raw text
                         var messages = result.messages;
                         console.log(text)
                     })
@@ -130,7 +131,6 @@ app.post("/upload", function (req, res) {
                             //return {azure,pons}
                             return { resultAzure };
                         }
-                        var translatedPonse = []
                         Promise.all(arrayOfPromises).then((result) => {
 
                             var translate = result
@@ -142,16 +142,34 @@ app.post("/upload", function (req, res) {
                                     console.log(docs)
                                     if (docs.length > 0) {
                                         console.log('KURDE')
-                                        console.log(m.resultAzure[0].translations)
                                         var joinedWord = `${docs[0].article} ${docs[0].word}`
 
                                         translatedWords.push({ source: joinedWord, target: m.resultAzure[0].translations[1].text })
                                         console.log(translatedWords, 'translated')
                                     } else {
                                         console.log('XD')
-                                        console.log(m.resultAzure[0].translations)
                                         translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text })
                                         console.log(translatedWords, 'translated')
+                                    }
+
+                                    if (translatedWords.length == translate.length) {
+                                        console.log("GITTTT______________________________________")
+                                        console.log(translatedWords, 'translated')
+                                        const elo = async function init() {
+                                            const doc = new Document();
+                                            translatedWords.map(w => {
+                                                var paragraph = new Paragraph(w.source + " : " + w.target);
+
+                                                doc.addParagraph(paragraph);
+                                            })
+
+                                            const packer = new Packer();
+
+                                            const b64string = await packer.toBase64String(doc);
+                                            res.setHeader('Content-Disposition', 'attachment; filename=My Document.docx');
+                                            res.send(Buffer.from(b64string, 'base64'));
+                                        }
+                                        elo()
                                     }
 
                                 });
