@@ -9,9 +9,15 @@ var upload = require("express-fileupload");
 var mammoth = require("mammoth");
 var mongoose = require('mongoose')
 const uuidv4 = require("uuid/v4");
-const docx = require("docx")
+var officegen = require("officegen");
+var docx = officegen({
+    'type': 'docx',
+    'subject': 'testing it',
+    'keywords': 'some keywords',
+    'description': 'a description',
+    'pageMargins': { top: 1000, left: 800, bottom: 1000, right: 800 }
+});
 var path = require("path")
-const { Document, Paragraph, Packer } = docx;
 var Word = require("./models/words")
 var filename, textConverted, plainText;
 var translatedWords = []
@@ -89,7 +95,7 @@ app.post("/upload", function (req, res) {
                     .then(function (result) {
                         plainText = result.value; // The raw text
                         var messages = result.messages;
-                        console.log(text)
+                        console.log(plainText)
                     })
                     .done();
                 mammoth.convertToHtml({ path: "./upload/" + filename })
@@ -141,35 +147,70 @@ app.post("/upload", function (req, res) {
                                 Word.find({ word: m.resultAzure[0].translations[0].text }, function (err, docs) {
                                     console.log(docs)
                                     if (docs.length > 0) {
-                                        console.log('KURDE')
                                         var joinedWord = `${docs[0].article} ${docs[0].word}`
 
-                                        translatedWords.push({ source: joinedWord, target: m.resultAzure[0].translations[1].text })
+                                        translatedWords.push({ source: joinedWord, target: m.resultAzure[0].translations[1].text, ready: `${joinedWord} - ${m.resultAzure[0].translations[1].text}` })
                                         console.log(translatedWords, 'translated')
                                     } else {
-                                        console.log('XD')
-                                        translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text })
-                                        console.log(translatedWords, 'translated')
+                                        translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text, ready: `${m.resultAzure[0].translations[0].text} - ${m.resultAzure[0].translations[1].text}` })
                                     }
 
                                     if (translatedWords.length == translate.length) {
                                         console.log("GITTTT______________________________________")
                                         console.log(translatedWords, 'translated')
-                                        const elo = async function init() {
-                                            const doc = new Document();
-                                            translatedWords.map(w => {
-                                                var paragraph = new Paragraph(w.source + " : " + w.target);
-
-                                                doc.addParagraph(paragraph);
-                                            })
-
-                                            const packer = new Packer();
-
-                                            const b64string = await packer.toBase64String(doc);
-                                            res.setHeader('Content-Disposition', 'attachment; filename=My Document.docx');
-                                            res.send(Buffer.from(b64string, 'base64'));
+                                        var context = ""
+                                        var count = 0;
+                                        for (var e = 0; e < translatedWords.length; e++) {
+                                            context += (`${translatedWords[e].ready}\r\n`)
+                                            count += 1
                                         }
-                                        elo()
+                                        if (count == translatedWords.length) {
+                                            var table = [
+                                                [
+                                                    {
+                                                        "val": plainText,
+                                                        "opts": {
+                                                            "cellColWidth": 7461,
+                                                            "b": false,
+                                                            "sz": "20",
+                                                            "shd": {
+                                                                "themeFill": "text1",
+                                                            },
+                                                            "fontFamily": "Arial"
+                                                        }
+                                                    },
+                                                    {
+                                                        "val": context,
+                                                        "opts": {
+                                                            "cellColWidth": 2861,
+                                                            "b": true,
+                                                            "sz": "20",
+                                                            "shd": {
+                                                                "themeFill": "text1",
+                                                            },
+                                                            "fontFamily": "Arial"
+                                                        }
+                                                    }
+                                                ],
+                                            ]
+
+                                            var tableStyle = {
+                                                // tableColWidth: 4261,
+                                                tableSize: 14,
+                                                tableColor: "ada",
+                                                tableAlign: "left",
+                                                tableFontFamily: "Comic Sans MS",
+                                                borders: false,
+                                            }
+
+                                            docx.createTable(table, tableStyle);
+
+                                            res.set({
+                                                "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                                'Content-disposition': 'attachment; filename=blah.docx'
+                                            });
+                                            docx.generate(res);
+                                        }
                                     }
 
                                 });

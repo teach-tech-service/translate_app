@@ -4,7 +4,7 @@ const PORT = 3000;
 var hbs = require('express-handlebars');
 const docx = require("docx")
 var path = require("path")
-const { Document, Paragraph, Packer } = docx;
+const { Document, Paragraph, Packer, BorderStyle, Table, WidthType } = docx;
 
 app.use(express.static('static'))
 app.set('views', path.join(__dirname, 'views'));
@@ -12,11 +12,11 @@ app.engine('hbs', hbs({ defaultLayout: 'main.hbs' }));
 app.set('view engine', 'hbs');
 
 app.get("/", async function (req, res) {
-    const doc = new Document();
+    const doc = new docx.Document();
 
-    const paragraph = new Paragraph("Hello World");
+    const table = doc.createTable(4, 4);
+    table.getCell(2, 2).addContent(new Paragraph('Hello'));
 
-    doc.addParagraph(paragraph);
     const packer = new Packer();
 
     const b64string = await packer.toBase64String(doc);
