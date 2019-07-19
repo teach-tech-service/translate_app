@@ -1,0 +1,25 @@
+{
+  "name": "translate-app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "docx": "^5.0.0-rc4",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.1.5",
+    "express-handlebars": "^3.1.0",
+    "mammoth": "^1.4.8",
+    "mongoose": "^5.6.4",
+    "officegen": "^0.6.0",
+    "officegen-complex-table": "^1.0.4",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4",
+    "uuid": "^3.3.2"
+  }
+}
