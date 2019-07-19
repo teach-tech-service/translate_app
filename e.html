@@ -9,7 +9,10 @@
 </head>
 
 <body>
+    <button id="btn">50 Pompek</button>
+    <div class="result">0</div>
     <script>
+        var count = 50;
         var text = "<p>Ich kannte einmal eine stolze <strong>Theekanne</strong> stolz auf ihr Porzellan, stolz auf ihre lange Tülle, stolz auf ihren breiten <strong>Henkel</strong>. Und davon sprach sie gern; von ihrem Deckel dagegen sprach sie nicht; erhatte seine Mängel, und davon spricht man nicht gern, das thun schon die Andern zur <strong>Genüge</strong>. Die <strong>Tassen</strong>, der Sahnentopf und die Zuckerschale, kurzum das ganze Theegeschirr würden sicherlich die <strong>Gebrechlichkeit</strong> des Deckels nicht vergessen, und weit mehr davon reden, als von dem guten Henkel und der ausgezeichneten <strong>Tülle</strong>";
         var getFromBetween = {
             results: [],
@@ -51,12 +54,16 @@
                 return this.results;
             }
         };
-        var result = getFromBetween.get(text, "<strong>", "</strong>");
-        console.log(result);
+        document.getElementById('btn').addEventListener("click", function () {
+            document.querySelector(".result").innerHTML = Number(document.querySelector(".result").innerHTML) + count
+        })
+        // var result = getFromBetween.get(text, "<strong>", "</strong>");
+        // console.log(result);
         // var tmpStr = text.match("<strong>(.*)</strong>");
         // var newStr = tmpStr[1];
         // var tab = []
         // tab.push(newStr)
+
     </script>
 </body>
 

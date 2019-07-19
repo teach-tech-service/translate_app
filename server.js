@@ -95,7 +95,7 @@ app.post("/upload", function (req, res) {
                     .then(function (result) {
                         plainText = result.value; // The raw text
                         var messages = result.messages;
-                        console.log(plainText)
+                        console.log(plainText, 'pl')
                     })
                     .done();
                 mammoth.convertToHtml({ path: "./upload/" + filename })
@@ -140,12 +140,11 @@ app.post("/upload", function (req, res) {
                         Promise.all(arrayOfPromises).then((result) => {
 
                             var translate = result
-
                             translate.map(m => {
                                 console.log(m.resultAzure[0])
                                 // translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text })
                                 Word.find({ word: m.resultAzure[0].translations[0].text }, function (err, docs) {
-                                    console.log(docs)
+                                    console.log(docs, 'doc')
                                     if (docs.length > 0) {
                                         var joinedWord = `${docs[0].article} ${docs[0].word}`
 
@@ -197,7 +196,7 @@ app.post("/upload", function (req, res) {
                                             var tableStyle = {
                                                 // tableColWidth: 4261,
                                                 tableSize: 14,
-                                                tableColor: "ada",
+                                                // tableColor: "#000000",           
                                                 tableAlign: "left",
                                                 tableFontFamily: "Comic Sans MS",
                                                 borders: false,
@@ -207,7 +206,7 @@ app.post("/upload", function (req, res) {
 
                                             res.set({
                                                 "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                                'Content-disposition': 'attachment; filename=blah.docx'
+                                                'Content-disposition': 'attachment; filename=translated.docx'
                                             });
                                             docx.generate(res);
                                         }
