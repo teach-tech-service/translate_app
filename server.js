@@ -10,19 +10,13 @@ var mammoth = require("mammoth");
 var mongoose = require('mongoose')
 const uuidv4 = require("uuid/v4");
 var officegen = require("officegen");
-var docx = officegen({
-    'type': 'docx',
-    'subject': 'testing it',
-    'keywords': 'some keywords',
-    'description': 'a description',
-    'pageMargins': { top: 1000, left: 800, bottom: 1000, right: 800 }
-});
 var path = require("path")
 var Word = require("./models/words")
 var filename, textConverted, plainText;
 var translatedWords = []
-
-
+var words = []
+var translate = []
+var table = []
 app.use(express.static('static'))
 app.use(upload());
 app.set('views', path.join(__dirname, 'views'));
@@ -104,7 +98,7 @@ app.post("/upload", function (req, res) {
                         var messages = result.messages;
                         var results = getFromBetween.get(textConverted, "<strong>", "</strong>");
                         console.log(results)
-                        var words = results
+                        words = results
                         for (let i = 0; i < words.length; i++) {
                             arrayOfPromises.push(call(words[i]))
                         }
@@ -139,32 +133,39 @@ app.post("/upload", function (req, res) {
                         }
                         Promise.all(arrayOfPromises).then((result) => {
 
-                            var translate = result
+                            translate = result
                             translate.map(m => {
-                                console.log(m.resultAzure[0])
+                                // console.log(m.resultAzure[0])
                                 // translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text })
                                 Word.find({ word: m.resultAzure[0].translations[0].text }, function (err, docs) {
                                     console.log(docs, 'doc')
                                     if (docs.length > 0) {
                                         var joinedWord = `${docs[0].article} ${docs[0].word}`
-
                                         translatedWords.push({ source: joinedWord, target: m.resultAzure[0].translations[1].text, ready: `${joinedWord} - ${m.resultAzure[0].translations[1].text.toLowerCase()}` })
-                                        console.log(translatedWords, 'translated')
+                                        //console.log(translatedWords, 'translated')
                                     } else {
                                         translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text, ready: `${m.resultAzure[0].translations[0].text} - ${m.resultAzure[0].translations[1].text.toLowerCase()}` })
                                     }
 
                                     if (translatedWords.length == translate.length) {
                                         console.log("GITTTT______________________________________")
-                                        console.log(translatedWords, 'translated')
+                                        // console.log(translatedWords, 'translated')
                                         var context = ""
                                         var count = 0;
                                         for (var e = 0; e < translatedWords.length; e++) {
                                             context += (`${translatedWords[e].ready}\r\n`)
                                             count += 1
                                         }
+                                        console.log(context)
                                         if (count == translatedWords.length) {
-                                            var table = [
+                                            var docx = officegen({
+                                                'type': 'docx',
+                                                'subject': 'testing it',
+                                                'keywords': 'some keywords',
+                                                'description': 'a description',
+                                                'pageMargins': { top: 1000, left: 800, bottom: 1000, right: 800 }
+                                            });
+                                            table = [
                                                 [
                                                     {
                                                         "val": plainText,
@@ -214,6 +215,9 @@ app.post("/upload", function (req, res) {
                                             });
                                             docx.generate(res);
                                             translatedWords = []
+                                            words = []
+                                            translate = []
+                                            table = []
                                         }
                                     }
 
