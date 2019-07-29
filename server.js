@@ -16,6 +16,7 @@ var filename, textConverted, plainText;
 var translatedWords = []
 var words = []
 var translate = []
+var promiseTranslated = []
 var table = []
 app.use(express.static('static'))
 app.use(upload());
@@ -131,103 +132,116 @@ app.post("/upload", function (req, res) {
                             //return {azure,pons}
                             return { resultAzure };
                         }
+
+                        async function findDb(wordDB) {
+                            let docs = await Word.find({ word: wordDB })
+                            return docs;
+                        }
+
                         Promise.all(arrayOfPromises).then((result) => {
-
                             translate = result
-                            translate.map(m => {
-                                // console.log(m.resultAzure[0])
-                                // translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text })
-                                Word.find({ word: m.resultAzure[0].translations[0].text }, function (err, docs) {
-                                    console.log(docs, 'doc')
-                                    if (docs.length > 0) {
-                                        var joinedWord = `${docs[0].article} ${docs[0].word}`
-                                        translatedWords.push({ source: joinedWord, target: m.resultAzure[0].translations[1].text, ready: `${joinedWord} - ${m.resultAzure[0].translations[1].text.toLowerCase()}` })
-                                        //console.log(translatedWords, 'translated')
-                                    } else {
-                                        translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text, ready: `${m.resultAzure[0].translations[0].text} - ${m.resultAzure[0].translations[1].text.toLowerCase()}` })
-                                    }
-
-                                    if (translatedWords.length == translate.length) {
-                                        console.log("GITTTT______________________________________")
-                                        // console.log(translatedWords, 'translated')
-                                        var context = ""
-                                        var count = 0;
-                                        for (var e = 0; e < translatedWords.length; e++) {
-                                            context += (`${translatedWords[e].ready}\r\n`)
-                                            count += 1
-                                        }
-                                        console.log(context)
-                                        if (count == translatedWords.length) {
-                                            var docx = officegen({
-                                                'type': 'docx',
-                                                'subject': 'testing it',
-                                                'keywords': 'some keywords',
-                                                'description': 'a description',
-                                                'pageMargins': { top: 1000, left: 800, bottom: 1000, right: 800 }
-                                            });
-                                            table = [
-                                                [
-                                                    {
-                                                        "val": plainText,
-                                                        "opts": {
-                                                            "cellColWidth": 7461,
-                                                            "b": false,
-                                                            "sz": "20",
-                                                            "shd": {
-                                                                "themeFill": "text1",
-                                                                "fill": "#ffffff",
-                                                                "themeFillTint": "0"
-                                                            },
-                                                            "fontFamily": "Times New Roman"
-                                                        }
-                                                    },
-                                                    {
-                                                        "val": context,
-                                                        "opts": {
-                                                            "cellColWidth": 2861,
-                                                            "b": true,
-                                                            "sz": "20",
-                                                            "shd": {
-                                                                "themeFill": "text1",
-                                                                "fill": "#ffffff",
-                                                                "themeFillTint": "0"
-                                                            },
-                                                            "fontFamily": "Times New Roman"
-                                                        }
-                                                    }
-                                                ],
-                                            ]
-
-                                            var tableStyle = {
-                                                // tableColWidth: 4261,
-                                                tableSize: 14,
-                                                tableColor: "ada",
-                                                tableAlign: "left",
-                                                tableFontFamily: "Times New Roman",
-                                                borders: false,
-                                            }
-
-                                            docx.createTable(table, tableStyle);
-
-                                            res.set({
-                                                "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                                'Content-disposition': 'attachment; filename=translated.docx'
-                                            });
-                                            docx.generate(res);
-                                            translatedWords = []
-                                            words = []
-                                            translate = []
-                                            table = []
-                                        }
-                                    }
-
-                                });
-                            })
+                            console.log(translate)
+                            for (var i = 0; i < translate.length; i++) {
+                                promiseTranslated.push(findDb(translate[i].resultAzure[0].translations[0].text))
+                            }
 
 
                         }).catch(function (err) {
                             console.log("ERROR", err)
+                        }).then(function () {
+                            Promise.all(promiseTranslated).then((result) => {
+
+                                // translatedWords.push({ source: m.resultAzure[0].translations[0].text, target: m.resultAzure[0].translations[1].text })
+                                for (var x = 0; x < result.length; x++) {
+                                    for (var m = 0; m < translate.length; m++) {
+                                        let docs = result[x]
+                                        let translated = translate[m]
+                                        if (docs.length > 0) {
+                                            var joinedWord = `${docs[0].article} ${docs[0].word}`
+                                            translatedWords.push({ source: joinedWord, target: translated.resultAzure[0].translations[1].text, ready: `${joinedWord} - ${translated.resultAzure[0].translations[1].text.toLowerCase()}` })
+                                        } else {
+                                            translatedWords.push({ source: translated.resultAzure[0].translations[0].text, target: translated.resultAzure[0].translations[1].text, ready: `${translated.resultAzure[0].translations[0].text} - ${translated.resultAzure[0].translations[1].text.toLowerCase()}` })
+                                        }
+
+                                        if (translatedWords.length == translate.length) {
+                                            console.log("GITTTT______________________________________")
+                                            var context = ""
+                                            var count = 0;
+                                            for (var e = 0; e < translatedWords.length; e++) {
+                                                context += (`${translatedWords[e].ready}\r\n`)
+                                                count += 1
+                                            }
+                                            console.log(context)
+                                            if (count == translatedWords.length) {
+                                                var docx = officegen({
+                                                    'type': 'docx',
+                                                    'subject': 'testing it',
+                                                    'keywords': 'some keywords',
+                                                    'description': 'a description',
+                                                    'pageMargins': { top: 1000, left: 800, bottom: 1000, right: 800 }
+                                                });
+                                                table = [
+                                                    [
+                                                        {
+                                                            "val": plainText,
+                                                            "opts": {
+                                                                "cellColWidth": 7461,
+                                                                "b": false,
+                                                                "sz": "20",
+                                                                "shd": {
+                                                                    "themeFill": "text1",
+                                                                    "fill": "#ffffff",
+                                                                    "themeFillTint": "0"
+                                                                },
+                                                                "fontFamily": "Times New Roman"
+                                                            }
+                                                        },
+                                                        {
+                                                            "val": context,
+                                                            "opts": {
+                                                                "cellColWidth": 2861,
+                                                                "b": true,
+                                                                "sz": "20",
+                                                                "shd": {
+                                                                    "themeFill": "text1",
+                                                                    "fill": "#ffffff",
+                                                                    "themeFillTint": "0"
+                                                                },
+                                                                "fontFamily": "Times New Roman"
+                                                            }
+                                                        }
+                                                    ],
+                                                ]
+
+                                                var tableStyle = {
+                                                    // tableColWidth: 4261,
+                                                    tableSize: 14,
+                                                    tableColor: "ada",
+                                                    tableAlign: "left",
+                                                    tableFontFamily: "Times New Roman",
+                                                    borders: false,
+                                                }
+
+                                                docx.createTable(table, tableStyle);
+
+                                                res.set({
+                                                    "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                                    'Content-disposition': 'attachment; filename=translated.docx'
+                                                });
+                                                docx.generate(res);
+                                                translatedWords = []
+                                                words = []
+                                                translate = []
+                                                table = []
+                                            }
+                                        }
+                                    }
+                                }
+                            }).catch(function (err) {
+                                console.log("ERROR", err)
+                            })
                         })
+
                     })
                     .done();
             }
